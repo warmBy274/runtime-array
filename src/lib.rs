@@ -11,9 +11,11 @@ pub struct Array<T: Sized> {
     len: usize
 }
 impl<T: Sized> Array<T> {
+    #[inline]
     pub fn len(&self) -> usize {
         self.len
     }
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.len == 0
     }
@@ -44,6 +46,7 @@ impl<T: Sized + Clone> Array<T> {
 }
 impl<T: Sized> Index<usize> for Array<T> {
     type Output = T;
+    #[inline]
     fn index(&self, index: usize) -> &Self::Output {
         if index >= self.len {
             panic!("index out of bounds: the len is {} but the index is {}", self.len, index);
@@ -52,6 +55,7 @@ impl<T: Sized> Index<usize> for Array<T> {
     }
 }
 impl<T: Sized> IndexMut<usize> for Array<T> {
+    #[inline]
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         if index >= self.len {
             panic!("index out of bounds: the len is {} but the index is {}", self.len, index);
@@ -60,6 +64,7 @@ impl<T: Sized> IndexMut<usize> for Array<T> {
     }
 }
 impl<T: Sized> Drop for Array<T> {
+    #[inline]
     fn drop(&mut self) {
         if self.ptr.is_null() {
             return;
@@ -72,12 +77,14 @@ impl<T: Sized> Drop for Array<T> {
 }
 impl<T: Sized> Deref for Array<T> {
     type Target = [T];
+    #[inline]
     fn deref(&self) -> &Self::Target {
         unsafe {from_raw_parts(self.ptr, self.len)}
     }
 }
 
 impl<T: Sized> DerefMut for Array<T> {
+    #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         unsafe {from_raw_parts_mut(self.ptr, self.len)}
     }
