@@ -7,12 +7,26 @@ use std::{
     ptr::NonNull
 };
 
+#[macro_export]
+macro_rules! array {
+    ($value:expr; $len:expr) => {{
+        let value = $value;
+        let len = $len;
+        $crate::RuntimeArray::new(value, len)
+    }};
+    ($($item:expr),* $(,)?) => {{
+        let items = [$($item),*];
+        $crate::RuntimeArray::from_slice(&items)
+    }};
+}
+
 pub struct RuntimeArray<T> {
     ptr: NonNull<T>,
     len: usize,
     _marker: PhantomData<T>
 }
 impl<T: Clone> RuntimeArray<T> {
+    #[must_use]
     pub fn new(value: T, len: usize) -> Self {
         if len == 0 {
             Self {
@@ -33,25 +47,57 @@ impl<T: Clone> RuntimeArray<T> {
             }
         }
     }
+    #[must_use]
+    pub fn from_slice(slice: &[T]) -> Self {
+        let len = slice.len();
+        if len == 0 {
+            Self {
+                ptr: NonNull::dangling(),
+                len: 0,
+                _marker: PhantomData,
+            }
+        }
+        else {
+            let ptr = unsafe {alloc(Layout::array::<T>(len).unwrap())} as *mut T;
+            for (i, value) in slice.to_vec().into_iter().enumerate() {
+                unsafe {ptr.add(i).write(value);}
+            }
+            Self {
+                ptr: unsafe {NonNull::new_unchecked(ptr)},
+                len,
+                _marker: PhantomData
+            }
+        }
+    }
+    #[inline]
+    #[must_use]
+    pub fn to_vec(&self) -> Vec<T> {
+        self.as_slice().to_vec()
+    }
 }
 impl<T> RuntimeArray<T> {
     #[inline]
+    #[must_use]
     pub fn len(&self) -> usize {
         self.len
     }
     #[inline]
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.len == 0
     }
     #[inline]
+    #[must_use]
     pub fn as_slice(&self) -> &[T] {
         unsafe {from_raw_parts(self.ptr.as_ptr(), self.len)}
     }
     #[inline]
+    #[must_use]
     pub fn as_mut_slice(&mut self) -> &mut [T] {
         unsafe {from_raw_parts_mut(self.ptr.as_ptr(), self.len)}
     }
     #[inline]
+    #[must_use]
     pub fn get(&self, index: usize) -> Option<&T> {
         if index < self.len {
             unsafe {Some(&*self.ptr.add(index).as_ptr())}
@@ -60,6 +106,7 @@ impl<T> RuntimeArray<T> {
         }
     }
     #[inline]
+    #[must_use]
     pub fn get_mut(&mut self, index: usize) -> Option<&mut T> {
         if index < self.len {
             unsafe {Some(&mut *self.ptr.add(index).as_ptr())}
