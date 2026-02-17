@@ -1,6 +1,6 @@
 [package]
 name = "little-collections"
-version = "3.3.2"
+version = "3.4.0"
 edition = "2024"
 description = "Rust crate that provides a some types of collections, such as heap array, ring buffer, function map and more in future"
 license = "MIT"

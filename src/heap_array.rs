@@ -1,5 +1,12 @@
 use std::{
-    alloc::{Layout, alloc, dealloc}, fmt::Debug, iter::{ExactSizeIterator, IntoIterator, Iterator}, marker::PhantomData, mem::ManuallyDrop, ops::{Index, IndexMut}, ptr::NonNull, slice::{from_raw_parts, from_raw_parts_mut}
+    iter::{ExactSizeIterator, IntoIterator, Iterator},
+    slice::{from_raw_parts, from_raw_parts_mut},
+    alloc::{Layout, alloc, dealloc},
+    mem::{ManuallyDrop, size_of},
+    ops::{Index, IndexMut},
+    marker::PhantomData,
+    ptr::NonNull,
+    fmt::Debug
 };
 
 #[macro_export]
@@ -46,6 +53,41 @@ impl<T: Clone> Clone for HeapArray<T> {
         }
     }
 }
+impl<T: Clone> HeapArray<T> {
+    pub fn from_slice(slice: &[T]) -> Self {
+        let len = slice.len();
+        if len == 0 {
+            return Self {
+                ptr: NonNull::dangling(),
+                len: 0,
+                _marker: PhantomData,
+            };
+        }
+        if size_of::<T>() == 0 {
+            return Self {
+                ptr: NonNull::dangling(),
+                len,
+                _marker: PhantomData,
+            };
+        }
+        let layout = Layout::array::<T>(len)
+            .expect("array layout too large");
+        let ptr = unsafe { alloc(layout) } as *mut T;
+        if ptr.is_null() {panic!("Failed to allocate memory for HeapArray")}
+        unsafe {
+            let mut dest = ptr;
+            for item in slice {
+                dest.write(item.clone());
+                dest = dest.add(1);
+            }
+        }
+        Self {
+            ptr: unsafe { NonNull::new_unchecked(ptr) },
+            len,
+            _marker: PhantomData,
+        }
+    }
+}
 impl<T> Default for HeapArray<T> {
     fn default() -> Self {
         Self {
@@ -66,35 +108,11 @@ impl<T> HeapArray<T> {
             }
         }
         else {
+            if size_of::<T>() == 0 {}
             let array_ptr = unsafe {alloc(Layout::array::<T>(len).unwrap())} as *mut T;
             let value_ptr = &value as *const T;
             for i in 0..len {
                 unsafe {array_ptr.add(i).write(value_ptr.read());}
-            }
-            Self {
-                ptr: unsafe {NonNull::new_unchecked(array_ptr)},
-                len,
-                _marker: PhantomData
-            }
-        }
-    }
-    #[must_use]
-    pub fn from_slice(slice: &[T]) -> Self {
-        let len = slice.len();
-        if len == 0 {
-            Self {
-                ptr: NonNull::dangling(),
-                len,
-                _marker: PhantomData,
-            }
-        }
-        else {
-            let slice_ptr = slice.as_ptr();
-            let array_ptr = unsafe {alloc(Layout::array::<T>(len).unwrap())} as *mut T;
-            for i in 0..len {
-                unsafe {
-                    array_ptr.add(i).write(slice_ptr.add(i).read());
-                }
             }
             Self {
                 ptr: unsafe {NonNull::new_unchecked(array_ptr)},
@@ -216,7 +234,7 @@ impl<'a, T> IntoIterator for &'a mut HeapArray<T> {
         self.iter_mut()
     }
 }
-impl<T> FromIterator<T> for HeapArray<T> {
+impl<T: Clone> FromIterator<T> for HeapArray<T> {
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
         Self::from_slice(&Vec::from_iter(iter))
     }

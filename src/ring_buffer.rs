@@ -20,7 +20,7 @@ impl<T: Clone> RingBuffer<T> {
         self.read_all().into_iter().map(|x| x.clone()).collect()
     }
 }
-impl<T> RingBuffer<T> {
+impl<T: Clone> RingBuffer<T> {
     #[must_use]
     pub fn from_slice(slice: &[T]) -> RingBuffer<T> {
         RingBuffer {
