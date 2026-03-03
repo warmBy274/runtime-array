@@ -32,16 +32,19 @@ impl<K, V> FnMap<K, V> {
         }
     }
     pub fn get(&self, key: &K) -> Option<&V> {
+        if self.buckets.len() == 0 {return None;}
         let index = (self.index_fn)(key) % self.buckets.len();
         if let Some((_, _, v)) = &self.buckets[index] {Some(v)}
         else {None}
     }
     pub fn get_mut(&mut self, key: &K) -> Option<&mut V> {
+        if self.buckets.len() == 0 {return None;}
         let index = (self.index_fn)(key) % self.buckets.len();
         if let Some((_, _, v)) = &mut self.buckets[index] {Some(v)}
         else {None}
     }
     pub fn get_key_mut(&mut self, key: &K) -> Option<KeyMutGuard<'_, K, V>> {
+        if self.buckets.len() == 0 {return None;}
         let index = (self.index_fn)(key) % self.buckets.len();
         if self.buckets[index].is_some() {
             Some(KeyMutGuard {
@@ -52,10 +55,12 @@ impl<K, V> FnMap<K, V> {
         else {None}
     }
     pub fn remove(&mut self, key: &K) -> Option<V> {
+        if self.buckets.len() == 0 {return None;}
         let index = (self.index_fn)(key) % self.buckets.len();
         self.buckets[index].take().map(|(_, _, v)| v)
     }
     pub fn remove_pair(&mut self, key: &K) -> Option<(K, V)> {
+        if self.buckets.len() == 0 {return None;}
         let index = (self.index_fn)(key) % self.buckets.len();
         self.buckets[index].take().map(|(_, k, v)| (k, v))
     }

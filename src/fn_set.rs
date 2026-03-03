@@ -32,11 +32,13 @@ impl<V> FnSet<V> {
         }
     }
     pub fn get(&self, id: usize) -> Option<&V> {
+        if self.buckets.len() == 0 {return None;}
         let index = id % self.buckets.len();
         if let Some((_, v)) = &self.buckets[index] {Some(v)}
         else {None}
     }
     pub fn get_mut(&mut self, id: usize) -> Option<MutGuard<'_, V>> {
+        if self.buckets.len() == 0 {return None;}
         let index = id % self.buckets.len();
         if self.buckets[index].is_some() {
             Some(MutGuard {
@@ -47,6 +49,7 @@ impl<V> FnSet<V> {
         else {None}
     }
     pub fn remove(&mut self, id: usize) -> Option<V> {
+        if self.buckets.len() == 0 {return None;}
         let index = id % self.buckets.len();
         self.buckets[index].take().map(|(_, v)| v)
     }
